@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Я стала дочерью герцога-призрака</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #04060b; color: #f1f5f9; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        
+        #preloader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #04060b; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 100000;
+            transition: all 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+        #preloader.hide { opacity: 0; visibility: hidden; transform: scale(1.1); pointer-events: none; }
+        
+        #preloader img {
+            width: 120px; height: auto;
+            animation: loader-pulse 2s infinite ease-in-out;
+            filter: drop-shadow(0 0 15px rgba(37, 99, 235, 0.2));
+        }
+        
+        @keyframes loader-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; filter: brightness(1) blur(0px); }
+            50% { transform: scale(1.05); opacity: 1; filter: brightness(1.2) blur(1px); }
+        }
+
+        .loader-bar {
+            width: 100px; height: 3px; background: rgba(255,255,255,0.05);
+            margin-top: 30px; border-radius: 10px; overflow: hidden; position: relative;
+        }
+        .loader-progress {
+            position: absolute; width: 50%; height: 100%;
+            background: #2563eb; border-radius: 10px;
+            animation: progress-slide 1.2s infinite ease-in-out;
+        }
+        @keyframes progress-slide { 0% { left: -50%; } 100% { left: 100%; } }
+
+        .card-anim { opacity: 0; transform: translateY(30px); transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .card-anim.show { opacity: 1; transform: translateY(0); }
+        .card-anim.exit { opacity: 0; transform: scale(0.8) rotate(2deg); }
+
+        #m-desc { max-height: 48px; overflow: hidden; transition: max-height 0.5s ease-in-out; }
+        .custom-select-content { 
+            position: absolute; top: calc(100% + 8px); left: 0; width: 220px; 
+            max-height: 350px; overflow-y: auto; z-index: 9999; display: none; flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); padding: 8px; border-radius: 20px;
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .custom-select-content::-webkit-scrollbar { width: 5px; }
+        .custom-select-content::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.4); border-radius: 20px; border: 2px solid rgba(15, 23, 42, 0); background-clip: padding-box; }
+
+        /* МАТЕРИАЛЫ С ЗАЩИТОЙ ОТ КЛИКОВ */
+        #materials-panel { 
+            transition: all 0.4s ease; max-height: 0; opacity: 0; overflow: hidden; 
+            pointer-events: none; /* Запрещаем клики в закрытом состоянии */
+        }
+        #materials-panel.open { 
+            max-height: 800px; opacity: 1; margin-top: 1rem; margin-bottom: 2.5rem; 
+            pointer-events: auto; /* Разрешаем клики в открытом состоянии */
+        }
+
+        .filter-btn.active { background-color: #2563eb !important; color: white !important; transform: scale(1.03); }
+        .circle-chart { transform: rotate(-90deg); }
+        .your-turn-badge { animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        * { font-style: normal !important; text-transform: none !important; }
+    </style>
+</head>
+<body class="p-4 md:p-6 lg:p-10">
+
+    <div id="preloader">
+        <div class="loader-content flex flex-col items-center">
+            <img src="logo.png" alt="Logo" loading="eager">
+            <div class="loader-bar">
+                <div class="loader-progress"></div>
+            </div>
+            <div class="mt-5 text-[9px] font-black text-blue-500/60 uppercase tracking-[4px]">Syncing Workspace</div>
+        </div>
+    </div>
+
+    <div id="worker-toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 glass px-8 py-3 rounded-2xl hidden z-[10000] text-sm font-bold border-blue-500/30 shadow-2xl">
+        Участник: <span class="text-blue-400 ml-1"></span>
+    </div>
+
+    <div class="max-w-7xl mx-auto">
+        <div id="meta-block" class="glass rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 mb-8 flex flex-col lg:flex-row gap-8 md:gap-10 items-center lg:items-start relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-80 h-80 bg-blue-600/5 blur-[100px] rounded-full"></div>
+            <div class="w-44 md:w-52 shrink-0 relative group">
+                <img id="m-cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Cover" class="relative w-full rounded-3xl shadow-xl object-cover aspect-[2/3] border border-white/10 bg-slate-900 transition-transform group-hover:scale-[1.01]">
+                <a id="m-link" href="#" target="_blank" class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-2 rounded-xl text-[10px] font-bold shadow-xl hover:bg-blue-600 hover:text-white transition-all whitespace-nowrap tracking-wide">MangaLib</a>
+            </div>
+            <div class="flex-grow text-center lg:text-left w-full">
+                <div id="m-genres" class="flex flex-wrap justify-center lg:justify-start gap-2 mb-4"></div>
+                <h1 id="m-title" class="text-2xl md:text-4xl font-black mb-4 tracking-tight leading-tight uppercase"></h1>
+                <div id="m-status-box" class="hidden mb-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 inline-flex items-center gap-3 text-left">
+                    <i data-lucide="alert-circle" class="text-red-500 w-5 h-5 shrink-0"></i>
+                    <p id="m-status-text" class="text-xs md:text-sm font-semibold text-red-400"></p>
+                </div>
+                <div onclick="App.toggleDesc()" class="cursor-pointer mb-6 group max-w-2xl mx-auto lg:mx-0 text-slate-400">
+                    <p id="m-desc" class="text-xs md:text-sm leading-relaxed"></p>
+                    <span class="text-blue-500 font-bold text-[9px] opacity-60 mt-2 block uppercase tracking-wider">
+                        <span id="desc-btn-text">Развернуть описание</span>
+                    </span>
+                </div>
+                <div class="flex flex-wrap justify-center lg:justify-start gap-8 md:gap-10 pt-4 border-t border-white/5">
+                    <div class="flex flex-col"><span id="stat-done-count" class="text-3xl md:text-4xl font-black text-green-500 leading-none">0</span><span class="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-wider">Готово</span></div>
+                    <div class="flex flex-col"><span id="stat-orig" class="text-3xl md:text-4xl font-black text-blue-500">0</span><span class="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-wider">Оригинал</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col xl:flex-row justify-between items-stretch xl:items-center mb-6 gap-4">
+            <div class="flex flex-wrap md:flex-nowrap gap-2 items-center">
+                <div class="flex p-1 glass rounded-2xl shrink-0">
+                    <button id="f-all" onclick="App.changeFilter('all')" class="filter-btn px-5 md:px-7 py-2.5 text-[10px] font-black rounded-xl">Все</button>
+                    <button id="f-active" onclick="App.changeFilter('active')" class="filter-btn px-5 md:px-7 py-2.5 text-[10px] font-black rounded-xl text-slate-400">Работа</button>
+                    <button id="f-issues" onclick="App.changeFilter('issues')" class="filter-btn px-5 md:px-7 py-2.5 text-[10px] font-black rounded-xl text-slate-400">Затыки</button>
+                </div>
+                <button onclick="App.toggleMaterials()" class="h-[46px] px-5 glass rounded-2xl text-blue-400 flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-all shrink-0">
+                    <i data-lucide="folder-kanban" class="w-4 h-4"></i>
+                    <span class="text-[10px] font-black uppercase">Материалы</span>
+                </button>
+                <div class="relative shrink-0 h-[46px]">
+                    <button onclick="App.toggleWorkerList()" id="workerBtn" class="h-full px-5 glass rounded-2xl flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-all text-blue-400">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                        <span id="selectedWorkerName" class="text-[10px] font-black max-w-[100px] truncate uppercase tracking-widest">Участники</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 opacity-50"></i>
+                    </button>
+                    <div id="workerList" class="custom-select-content glass rounded-2xl"></div>
+                </div>
+            </div>
+            <div class="relative w-full xl:w-72 group">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                <input type="text" id="search" oninput="App.render(true)" placeholder="Поиск главы..." class="w-full bg-slate-900/40 border border-white/5 rounded-2xl py-3.5 px-12 text-xs font-medium focus:outline-none focus:border-blue-500/40">
+                <button onclick="App.handleSort()" class="absolute right-4 top-1/2 -translate-y-1/2 hover:scale-125 transition-transform"><i id="sortIcon" data-lucide="sort-asc" class="w-4 h-4 text-blue-400"></i></button>
+            </div>
+        </div>
+
+        <div id="materials-panel" class="glass rounded-[2rem] p-5">
+            <div id="materials-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-blue-400"></div>
+        </div>
+
+        <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 min-h-[500px] content-start"></div>
+    </div>
+
+    <script>
+        const API = {
+            key: 'AIzaSyAQk-3Ms7jdso_tpFrRTfcyiQT78jofT7Y',
+            id: '114FeJk2n5AOdDAZneaSQR5pSUPyq-TQOQl-z6WARZ_Y',
+            range: 'Лист1!A1:P1000'
+        };
+
+        const App = {
+            data: [], 
+            filter: localStorage.getItem('manga_filter') || 'all',
+            sort: 'asc', meta: {}, workers: new Set(), 
+            currentWorker: localStorage.getItem('manga_worker') || '',
+
+            async init() {
+                try {
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${API.id}/values/${API.range}?key=${API.key}`);
+                    const json = await res.json();
+                    if (json.values) {
+                        this.parse(json.values);
+                        setTimeout(() => document.getElementById('preloader').classList.add('hide'), 800);
+                    }
+                    document.getElementById(`f-${this.filter}`).classList.add('active');
+                    if(this.currentWorker) document.getElementById('selectedWorkerName').innerText = this.currentWorker;
+                    window.addEventListener('click', (e) => {
+                        if (!e.target.closest('#workerBtn') && !e.target.closest('#workerList')) {
+                            document.getElementById('workerList').style.display = 'none';
+                        }
+                    });
+                } catch (e) { console.error(e); }
+            },
+
+            toggleDesc() {
+                const el = document.getElementById('m-desc');
+                const btn = document.getElementById('desc-btn-text');
+                const isFull = el.style.maxHeight === '1000px';
+                el.style.maxHeight = isFull ? '48px' : '1000px';
+                btn.innerText = isFull ? 'Развернуть описание' : 'Свернуть описание';
+            },
+
+            toggleMaterials() { document.getElementById('materials-panel').classList.toggle('open'); },
+
+            toggleWorkerList() {
+                const list = document.getElementById('workerList');
+                const isHidden = list.style.display === 'none' || !list.style.display;
+                list.style.display = isHidden ? 'flex' : 'none';
+                if (isHidden) {
+                    list.style.opacity = '0'; list.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        list.style.opacity = '1'; list.style.transform = 'translateY(0)';
+                        list.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    }, 10);
+                }
+            },
+
+            parse(rows) {
+                const getVal = (r, c) => (rows[r] && rows[r][c]) ? rows[r][c] : '';
+                this.meta = {
+                    totalOrig: getVal(932, 3).replace(/\D/g, ''), cover: getVal(935, 0), title: getVal(935, 1).replace('\n', ' '),
+                    genres: getVal(935, 4).split(','), link: getVal(932, 7), issue: getVal(935, 8), desc: getVal(937, 1),
+                    links: [
+                        {n:'Общая', k:'cloud', l:getVal(948,0), m:true}, {n:'Равки', k:'image', l:getVal(949,0)},
+                        {n:'Перевод', k:'languages', l:getVal(949,1)}, {n:'Клин', k:'brush', l:getVal(951,0)},
+                        {n:'Тайп', k:'type', l:getVal(950,0)}, {n:'Редакт', k:'file-text', l:getVal(950,1)},
+                        {n:'QC', k:'shield-check', l:getVal(951,1)}
+                    ]
+                };
+                this.data = rows.filter(r => r[0] && !isNaN(parseFloat(r[0].toString().replace(',', '.')))).map(row => {
+                    const s = { rp: row[3]==='TRUE', tl: row[5]==='TRUE', pr: row[7]==='TRUE', cl: row[9]==='TRUE', ts: row[11]==='TRUE', qc: row[13]==='TRUE' };
+                    const w = { rp: (row[2]||'').trim(), tl: (row[4]||'').trim(), pr: (row[6]||'').trim(), cl: (row[8]||'').trim(), ts: (row[10]||'').trim(), qc: (row[12]||'').trim() };
+                    Object.values(w).forEach(name => { if(name) this.workers.add(name); });
+                    const doneCount = Object.values(s).filter(v => v).length;
+                    const perc = Math.round((doneCount / 6) * 100);
+                    const isFinished = s.qc === true;
+                    let status = { text: 'В работе', type: 'info' };
+                    if (isFinished) status = { text: 'Готово', type: 'success' };
+                    else if (s.cl && !s.rp) status = { text: 'Равки', type: 'error' };
+                    else if (s.pr && !s.tl) status = { text: 'Перевод', type: 'error' };
+                    else if (s.ts && !s.cl && s.pr) status = { text: 'Клин', type: 'error' };
+                    else if (s.ts && s.cl && !s.pr) status = { text: 'Редакт', type: 'error' };
+                    else if (s.qc && !s.ts) status = { text: 'Тайп', type: 'error' };
+                    else {
+                        const order = [['rp','Равки'],['cl','Клин'],['tl','Перевод'],['pr','Редакт'],['ts','Тайпсет'],['qc','Проверка']];
+                        for(let [k, t] of order) if(!s[k]) { status.text = `${t}`; break; }
+                    }
+                    return { id: parseFloat(row[0].toString().replace(',', '.')), raw: row[0], s, w, perc, status, isFinished, readUrl: row[14]||'' };
+                });
+                this.updateUI();
+            },
+
+            updateUI() {
+                const m = this.meta;
+                document.getElementById('m-cover').src = m.cover;
+                document.getElementById('m-title').innerText = m.title;
+                document.getElementById('m-desc').innerText = m.desc;
+                document.getElementById('m-link').href = m.link;
+                document.getElementById('stat-done-count').innerText = this.data.filter(c => c.isFinished).length;
+                document.getElementById('stat-orig').innerText = m.totalOrig;
+                const sb = document.getElementById('m-status-box');
+                if(m.issue && m.issue.trim()) { sb.classList.remove('hidden'); document.getElementById('m-status-text').innerText = m.issue; }
+                document.getElementById('m-genres').innerHTML = m.genres.map(g => `<span class="px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-[9px] font-black text-blue-400 uppercase tracking-widest">${g.trim()}</span>`).join('');
+                document.getElementById('materials-grid').innerHTML = m.links.map(l => `<a href="${l.l}" target="_blank" class="flex flex-col items-center gap-2 p-4 ${l.m ? 'bg-blue-600/10 border-blue-500/20' : 'bg-white/5 border-white/5'} border rounded-2xl hover:bg-blue-600 hover:text-white transition-all group text-center"><i data-lucide="${l.k}"></i><span class="text-[8px] font-black uppercase tracking-widest">${l.n}</span></a>`).join('');
+                this.populateWorkerList(); 
+                this.render();
+            },
+
+            populateWorkerList() {
+                const list = document.getElementById('workerList');
+                const uniqueWorkers = Array.from(new Set(this.workers)).sort();
+                list.innerHTML = `<button onclick="App.selectWorker('')" class="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-[10px] font-black text-slate-500 uppercase tracking-widest">Все участники</button>`;
+                uniqueWorkers.forEach(name => {
+                    if (!name) return;
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left px-4 py-3 rounded-xl hover:bg-blue-600 transition-all text-[10px] font-black uppercase tracking-widest";
+                    btn.innerText = name; btn.onclick = () => this.selectWorker(name);
+                    list.appendChild(btn);
+                });
+            },
+
+            selectWorker(name) { 
+                this.currentWorker = name; localStorage.setItem('manga_worker', name); 
+                document.getElementById('selectedWorkerName').innerText = name || 'Участники'; 
+                document.getElementById('workerList').style.display = 'none';
+                this.render(true); 
+            },
+
+            changeFilter(f) {
+                this.filter = f; localStorage.setItem('manga_filter', f);
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'text-white'));
+                document.getElementById(`f-${f}`).classList.add('active');
+                this.render(true);
+            },
+
+            handleSort() {
+                this.sort = (this.sort === 'asc' ? 'desc' : 'asc');
+                document.getElementById('sortIcon').setAttribute('data-lucide', (this.sort === 'asc' ? 'sort-asc' : 'sort-desc'));
+                lucide.createIcons(); this.render(true);
+            },
+
+            render(isAnimated = false) {
+                const container = document.getElementById('grid');
+                const query = document.getElementById('search').value.toLowerCase();
+                if (isAnimated) { Array.from(container.children).forEach(c => c.classList.add('exit')); }
+
+                setTimeout(() => {
+                    container.innerHTML = '';
+                    let filtered = this.data.filter(ch => {
+                        const mQuery = ch.raw.toString().toLowerCase().startsWith(query);
+                        const mWorker = !this.currentWorker || Object.values(ch.w).includes(this.currentWorker);
+                        if (this.filter === 'active') return mQuery && mWorker && !ch.isFinished && ch.status.type !== 'error';
+                        if (this.filter === 'issues') return mQuery && mWorker && ch.status.type === 'error';
+                        return mQuery && mWorker;
+                    });
+
+                    if (filtered.length === 0) {
+                        const msg = this.filter === 'issues' ? "Затыков нет, всё по плану!" : "Глава не найдена";
+                        container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-40 opacity-30"><i data-lucide="search-x" class="w-12 h-12 mb-4"></i><p class="text-sm font-bold uppercase tracking-widest text-center">${msg}</p></div>`;
+                        lucide.createIcons(); return;
+                    }
+
+                    filtered.sort((a, b) => this.sort === 'asc' ? a.id - b.id : b.id - a.id);
+
+                    filtered.forEach((ch, idx) => {
+                        let color = ch.perc === 0 ? '#475569' : (ch.isFinished ? '#22c55e' : (ch.status.type === 'error' ? '#ef4444' : '#eab308'));
+                        let isMyTurn = (this.currentWorker) && (
+                            (ch.w.rp === this.currentWorker && !ch.s.rp) || (ch.w.cl === this.currentWorker && ch.s.rp && !ch.s.cl) ||
+                            (ch.w.tl === this.currentWorker && ch.s.rp && !ch.s.tl) || (ch.w.pr === this.currentWorker && ch.s.tl && !ch.s.pr) ||
+                            (ch.w.ts === this.currentWorker && ch.s.cl && ch.s.pr && !ch.s.ts) || (ch.w.qc === this.currentWorker && ch.s.ts && !ch.s.qc)
+                        );
+                        const circ = 213.6; const off = circ - (ch.perc / 100) * circ;
+                        const el = document.createElement('div');
+                        el.className = `card-anim glass p-6 rounded-[2rem] flex flex-col items-center ${ch.status.type === 'error' ? 'error-pulse' : ''} ${isMyTurn ? 'ring-2 ring-blue-500 ring-offset-4 ring-offset-[#04060b]' : ''}`;
+                        el.innerHTML = `
+                            <div class="w-full flex justify-between items-start mb-4">
+                                <div class="relative w-16 h-16">
+                                    <svg class="w-full h-full circle-chart" viewBox="0 0 80 80">
+                                        <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="4"/>
+                                        <circle cx="40" cy="40" r="34" fill="none" stroke="${color}" stroke-width="4" stroke-dasharray="${circ}" stroke-dashoffset="${off}" stroke-linecap="round" />
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center font-black text-sm text-white" style="color: ${ch.perc === 0 ? '#64748b' : 'white'}">${ch.raw}</div>
+                                </div>
+                                <div class="flex flex-col items-end">
+                                    <div class="text-xl font-black" style="color: ${color}">${ch.perc}%</div>
+                                    ${isMyTurn ? '<span class="your-turn-badge bg-blue-600 text-[8px] font-black px-2 py-1 rounded-full mt-1 text-white whitespace-nowrap">ТВОЙ ЭТАП!</span>' : ''}
+                                    <a href="${ch.readUrl || '#'}" target="_blank" class="mt-2 ${ch.readUrl ? 'text-blue-500 opacity-100 hover:scale-110' : 'text-slate-600 opacity-20 pointer-events-none'} transition-all"><i data-lucide="book-open" class="w-5 h-5"></i></a>
+                                </div>
+                            </div>
+                            <div class="mb-6 text-center"><div class="text-[10px] font-bold opacity-30 tracking-wide uppercase tracking-widest" style="${ch.status.type==='error'?'color: #ef4444; opacity: 1;':''}">${ch.status.text}</div></div>
+                            <div class="grid grid-cols-3 gap-2 w-full">
+                                ${[{n:'Рав',d:ch.s.rp,w:ch.w.rp},{n:'Пер',d:ch.s.tl,w:ch.w.tl},{n:'Ред',d:ch.s.pr,w:ch.w.pr},{n:'Кли',d:ch.s.cl,w:ch.w.cl},{n:'Тай',d:ch.s.ts,w:ch.w.ts},{n:'QC',d:ch.s.qc,w:ch.w.qc}]
+                                .map(st => `<div onclick="App.toast('${st.w}')" class="flex flex-col items-center py-2.5 rounded-xl cursor-pointer hover:bg-white/5 transition-all ${st.d ? 'bg-white/5 opacity-100' : 'opacity-10'} ${this.currentWorker && st.w === this.currentWorker ? 'border border-blue-500/50 bg-blue-500/5' : ''}"><span class="text-[7px] font-black mb-1 opacity-40 uppercase tracking-tighter">${st.n}</span><i data-lucide="${st.d ? 'check-circle' : 'circle'}" class="w-3.5 h-3.5 ${st.d ? (ch.isFinished ? 'text-green-500' : 'text-yellow-500') : ''}"></i></div>`).join('')}
+                            </div>`;
+                        container.appendChild(el);
+                        setTimeout(() => el.classList.add('show'), idx * 30);
+                    });
+                    lucide.createIcons();
+                }, isAnimated ? 300 : 0);
+            },
+
+            toast(n) { 
+                const t = document.getElementById('worker-toast'); t.querySelector('span').innerText = n || 'Не назначен'; t.classList.remove('hidden');
+                setTimeout(() => t.classList.add('hidden'), 2500); 
+            }
+        };
+        App.init();
+    </script>
+</body>
+</html>
